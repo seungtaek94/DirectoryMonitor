@@ -58,7 +58,7 @@ namespace POCO
 			m_queue.wakeUpAll();
 			//trace_out("m_queue.wakeUpAll()");
 			joinAll();
-			trace_out("joinAll()");
+			//trace_out("joinAll()");
 			m_queue.clear();
 			//trace_out("m_queue.clear()");
 		}

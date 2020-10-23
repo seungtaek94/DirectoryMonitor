@@ -9,7 +9,18 @@
 
 // 여기에 미리 컴파일하려는 헤더 추가
 #include "framework.h"
+#include "strsafe.h"
 #include "poco/UnicodeConverter.h"
-//#include "WaitingDlg.h"
+#include <vector>
+
+using Poco::Int32;
+
+typedef struct tagFileActionInfo 
+{
+	CTime		timeAction;
+	int			actionType;
+	CString		strFileName;
+	CString		strFilePath;
+} FILE_ACTION_INFO;
 
 #endif //PCH_H

@@ -45,11 +45,8 @@
     <ClInclude Include="CMemDC.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="Job.h">
-      <Filter>Job</Filter>
-    </ClInclude>
-    <ClInclude Include="JobThreadPool.h">
-      <Filter>Job</Filter>
+    <ClInclude Include="DirectoryMonitorThread.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -68,11 +65,8 @@
     <ClCompile Include="TextProgressCtrl.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="Job.cpp">
-      <Filter>Job</Filter>
-    </ClCompile>
-    <ClCompile Include="JobThreadPool.cpp">
-      <Filter>Job</Filter>
+    <ClCompile Include="DirectoryMonitorThread.cpp">
+      <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

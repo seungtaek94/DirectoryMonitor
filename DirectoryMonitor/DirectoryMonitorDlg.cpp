@@ -56,12 +56,16 @@ CDirectoryMonitorDlg::CDirectoryMonitorDlg(CWnd* pParent /*=nullptr*/)
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
 	m_pWaitingDlg = NULL;
+	m_pDirMonitorThread = NULL;
+	m_pListenDirAlterdThread = NULL;
+	int m_listIndex = 0;
 }
 
 void CDirectoryMonitorDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_EDIT_DIR_PATH, m_editDirPath);
+	DDX_Control(pDX, IDC_LIST_FILE, m_listFile);
 }
 
 BEGIN_MESSAGE_MAP(CDirectoryMonitorDlg, CDialogEx)
@@ -112,6 +116,14 @@ BOOL CDirectoryMonitorDlg::OnInitDialog()
 		m_pWaitingDlg = new CWaitingDlg(this);
 		m_pWaitingDlg->Create(CWaitingDlg::IDD, this);
 	}
+
+	if (m_pDirMonitorThread == NULL)
+	{
+		m_pDirMonitorThread = new CDirectoryMonitorThread;
+	}
+
+	InitListCrl();
+
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -165,6 +177,23 @@ HCURSOR CDirectoryMonitorDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+void CDirectoryMonitorDlg::InitListCrl()
+{
+	ListView_SetExtendedListViewStyleEx(m_listFile.m_hWnd, LVS_EX_CHECKBOXES, LVS_EX_CHECKBOXES);
+	ListView_SetExtendedListViewStyleEx(m_listFile.m_hWnd, LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);
+	ListView_SetExtendedListViewStyleEx(m_listFile.m_hWnd, LVS_EX_GRIDLINES, LVS_EX_GRIDLINES);
+	ListView_SetExtendedListViewStyleEx(m_listFile.m_hWnd, LVS_EX_SUBITEMIMAGES, LVS_EX_SUBITEMIMAGES);
+
+	m_listFile.InsertColumn(0, _T("Index"), LVCFMT_LEFT, 50);
+	m_listFile.InsertColumn(1, _T("Time"), LVCFMT_LEFT, 135);
+	m_listFile.InsertColumn(2, _T("Action Type"), LVCFMT_LEFT, 135);
+	m_listFile.InsertColumn(3, _T("File Name"), LVCFMT_LEFT, 500);
+
+	m_listFile.EnableToolTips(TRUE);
+	m_listFile.SetBkColor(RGB(255, 255, 255));
+}
+
+
 CString CDirectoryMonitorDlg::GetDirPath()
 {
 	CString _strPath;
@@ -183,15 +212,84 @@ CString CDirectoryMonitorDlg::GetDirPath()
 void CDirectoryMonitorDlg::OnBnClickedBtnStartMonitoring()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	ProgressStart(_T("Monitoring.."));
+	if (m_strDirPath.IsEmpty() == FALSE) {
+		if (m_pDirMonitorThread->isRunning() == FALSE)
+		{
+			m_pDirMonitorThread->StartDirMonitor(m_strDirPath);
+			m_pListenDirAlterdThread = AfxBeginThread(ListenDirAlterd, this);
+
+			ProgressStart(_T("Monitoring.."));
+		}		
+	}
+	else
+	{
+		AfxMessageBox(_T("Directory path is wrong !!"));
+	}
 }
 
+UINT CDirectoryMonitorDlg::ListenDirAlterd(LPVOID _pMain)
+{
+	CDirectoryMonitorDlg* pMainDlg = (CDirectoryMonitorDlg*)_pMain;
+
+	FILE_ACTION_INFO _fileActionInfo;
+	//std::vector<FILE_ACTION_INFO> dirMonitoringLog;
+	while (TRUE)
+	{
+		if (pMainDlg->m_pDirMonitorThread->IsEmpty()) {
+			Sleep(100);
+			continue;
+		}
+
+		_fileActionInfo = pMainDlg->m_pDirMonitorThread->Pop();
+		pMainDlg->SetMonitoringInfo(_fileActionInfo);
+	}
+	return 0;
+}
+
+void CDirectoryMonitorDlg::SetMonitoringInfo(FILE_ACTION_INFO _fileActionInfo)
+{
+	//UpdateData(TRUE);
+	int index = m_listFile.GetItemCount();
+	CString strTime = _fileActionInfo.timeAction.Format(_T("%Y-%m-%d %H:%M:%S"));
+	CString strFileActionType = GetStrFileActionType(_fileActionInfo.actionType);
+	CString strIndex;
+	strIndex.Format(_T("%d"), index+1);
+
+
+	m_listFile.InsertItem(index, strIndex);
+	m_listFile.SetItemText(index, 1, strTime);
+	m_listFile.SetItemText(index, 2, strFileActionType);
+	m_listFile.SetItemText(index, 3, _fileActionInfo.strFileName);
+	//UpdateData(FALSE);
+}
+
+CString CDirectoryMonitorDlg::GetStrFileActionType(int fileActionType)
+{
+	switch(fileActionType)
+	{
+	case(FILE_ACTION_ADDED):
+		return  _T("FILE_ACTION_ADDED");
+	
+	case(FILE_ACTION_REMOVED):
+		return _T("FILE_ACTION_REMOVED");
+	
+	default:
+		break;
+	}
+	return _T("NULL");
+}
 
 void CDirectoryMonitorDlg::OnBnClickedBtnFinishMonitoring()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	ProgressStop();
+	if (m_pDirMonitorThread->isRunning() == TRUE) {
+		m_pDirMonitorThread->stop();
+	}
+	
 }
+
+
 
 
 void CDirectoryMonitorDlg::ProgressStart(CString strMsg)

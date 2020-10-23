@@ -4,7 +4,9 @@
 
 #pragma once
 
+#include <algorithm>
 #include "WaitingDlg.h"
+#include "DirectoryMonitorThread.h"
 
 // CDirectoryMonitorDlg 대화 상자
 class CDirectoryMonitorDlg : public CDialogEx
@@ -25,6 +27,7 @@ public:
 // 구현입니다.
 protected:
 	CWaitingDlg* m_pWaitingDlg;
+	CDirectoryMonitorThread* m_pDirMonitorThread;
 
 	HICON m_hIcon;
 
@@ -36,19 +39,29 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
-	CEdit m_editDirPath;
 	
+
+	static UINT ListenDirAlterd(LPVOID _pMain);
+	
+	CEdit m_editDirPath;
+	CListCtrl m_listFile;
 
 	CString m_strDirPath;
 
 	CString GetDirPath();
+
+	int m_listIndex;
 	
 	afx_msg void OnBnClickedBtnStartMonitoring();
 	afx_msg void OnBnClickedBtnFinishMonitoring();	
 	afx_msg void OnBnClickedBtnSelectDir();
 
-
 	void ProgressStart(CString strMsg = L"");
 	void ProgressStop();
+	void InitListCrl();
+	CString GetStrFileActionType(int fileActionType);
+	void SetMonitoringInfo(FILE_ACTION_INFO _fileActionInfo);
+private:
+	CWinThread* m_pListenDirAlterdThread;
 	
 };
