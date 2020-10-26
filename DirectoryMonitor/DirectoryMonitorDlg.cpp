@@ -55,10 +55,9 @@ CDirectoryMonitorDlg::CDirectoryMonitorDlg(CWnd* pParent /*=nullptr*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
-	m_pWaitingDlg = NULL;
 	m_pDirMonitorThread = NULL;
 	m_pListenDirAlterdThread = NULL;
-	int m_listIndex = 0;
+	m_listIndex = 0;
 }
 
 void CDirectoryMonitorDlg::DoDataExchange(CDataExchange* pDX)
@@ -66,6 +65,7 @@ void CDirectoryMonitorDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_EDIT_DIR_PATH, m_editDirPath);
 	DDX_Control(pDX, IDC_LIST_FILE, m_listFile);
+	DDX_Control(pDX, IDC_PROGRESS_MONITORING, m_ProgressWait);
 }
 
 BEGIN_MESSAGE_MAP(CDirectoryMonitorDlg, CDialogEx)
@@ -111,11 +111,7 @@ BOOL CDirectoryMonitorDlg::OnInitDialog()
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 
-	if (m_pWaitingDlg == NULL)
-	{
-		m_pWaitingDlg = new CWaitingDlg(this);
-		m_pWaitingDlg->Create(CWaitingDlg::IDD, this);
-	}
+	ProgressStop(_T("Stopped !!"));
 
 	if (m_pDirMonitorThread == NULL)
 	{
@@ -123,7 +119,6 @@ BOOL CDirectoryMonitorDlg::OnInitDialog()
 	}
 
 	InitListCrl();
-
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -208,31 +203,10 @@ CString CDirectoryMonitorDlg::GetDirPath()
 	return _T("");
 }
 
-
-void CDirectoryMonitorDlg::OnBnClickedBtnStartMonitoring()
-{
-	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	if (m_strDirPath.IsEmpty() == FALSE) {
-		if (m_pDirMonitorThread->isRunning() == FALSE)
-		{
-			m_pDirMonitorThread->StartDirMonitor(m_strDirPath);
-			m_pListenDirAlterdThread = AfxBeginThread(ListenDirAlterd, this);
-
-			ProgressStart(_T("Monitoring.."));
-		}		
-	}
-	else
-	{
-		AfxMessageBox(_T("Directory path is wrong !!"));
-	}
-}
-
 UINT CDirectoryMonitorDlg::ListenDirAlterd(LPVOID _pMain)
 {
 	CDirectoryMonitorDlg* pMainDlg = (CDirectoryMonitorDlg*)_pMain;
-
 	FILE_ACTION_INFO _fileActionInfo;
-	//std::vector<FILE_ACTION_INFO> dirMonitoringLog;
 	while (TRUE)
 	{
 		if (pMainDlg->m_pDirMonitorThread->IsEmpty()) {
@@ -248,19 +222,16 @@ UINT CDirectoryMonitorDlg::ListenDirAlterd(LPVOID _pMain)
 
 void CDirectoryMonitorDlg::SetMonitoringInfo(FILE_ACTION_INFO _fileActionInfo)
 {
-	//UpdateData(TRUE);
 	int index = m_listFile.GetItemCount();
 	CString strTime = _fileActionInfo.timeAction.Format(_T("%Y-%m-%d %H:%M:%S"));
 	CString strFileActionType = GetStrFileActionType(_fileActionInfo.actionType);
 	CString strIndex;
 	strIndex.Format(_T("%d"), index+1);
 
-
 	m_listFile.InsertItem(index, strIndex);
 	m_listFile.SetItemText(index, 1, strTime);
 	m_listFile.SetItemText(index, 2, strFileActionType);
 	m_listFile.SetItemText(index, 3, _fileActionInfo.strFileName);
-	//UpdateData(FALSE);
 }
 
 CString CDirectoryMonitorDlg::GetStrFileActionType(int fileActionType)
@@ -282,28 +253,13 @@ CString CDirectoryMonitorDlg::GetStrFileActionType(int fileActionType)
 void CDirectoryMonitorDlg::OnBnClickedBtnFinishMonitoring()
 {
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
-	ProgressStop();
+	ProgressStop(_T("Stopped !!"));
 	if (m_pDirMonitorThread->isRunning() == TRUE) {
 		m_pDirMonitorThread->stop();
+		GetDlgItem(IDC_BTN_START_MONITORING)->EnableWindow(TRUE);
+		GetDlgItem(IDC_BTN_FINISH_MONITORING)->EnableWindow(FALSE);
 	}
 	
-}
-
-
-
-
-void CDirectoryMonitorDlg::ProgressStart(CString strMsg)
-{
-	if (!m_pWaitingDlg->IsWindowVisible()) {
-		m_pWaitingDlg->ProgressStart(strMsg);
-	}
-}
-void CDirectoryMonitorDlg::ProgressStop()
-{
-	if (m_pWaitingDlg == NULL) return;
-	if (m_pWaitingDlg->IsWindowVisible()) {
-		m_pWaitingDlg->ProgressStop();
-	}
 }
 
 void CDirectoryMonitorDlg::OnBnClickedBtnSelectDir()
@@ -311,4 +267,43 @@ void CDirectoryMonitorDlg::OnBnClickedBtnSelectDir()
 	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
 	m_strDirPath = GetDirPath();
 	m_editDirPath.SetWindowTextW(m_strDirPath);
+
+	if (m_strDirPath.IsEmpty() == FALSE) {
+		GetDlgItem(IDC_BTN_START_MONITORING)->EnableWindow(TRUE);
+	}
+}
+
+void CDirectoryMonitorDlg::OnBnClickedBtnStartMonitoring()
+{
+	// TODO: 여기에 컨트롤 알림 처리기 코드를 추가합니다.
+	if (m_strDirPath.IsEmpty() == FALSE) {
+		if (m_pDirMonitorThread->isRunning() == FALSE)
+		{
+			m_pDirMonitorThread->StartDirMonitor(m_strDirPath);
+			m_pListenDirAlterdThread = AfxBeginThread(ListenDirAlterd, this);
+
+			GetDlgItem(IDC_BTN_START_MONITORING)->EnableWindow(FALSE);
+			GetDlgItem(IDC_BTN_FINISH_MONITORING)->EnableWindow(TRUE);
+			ProgressStart(_T("Monitoring.."));
+		}
+	}
+	else
+	{
+		AfxMessageBox(_T("Directory path is wrong !!"));
+	}
+}
+
+void CDirectoryMonitorDlg::ProgressStart(CString strMsg)
+{
+	m_ProgressWait.SetShowPercent(TRUE);
+	m_ProgressWait.SetWindowText(strMsg);
+	m_ProgressWait.SetMarquee(true, 30);
+	m_ProgressWait.Invalidate();	
+}
+
+void CDirectoryMonitorDlg::ProgressStop(CString strMsg)
+{
+	m_ProgressWait.SetMarquee(false, 30);
+	m_ProgressWait.SetWindowText(strMsg);
+	m_ProgressWait.SetPos(0);
 }

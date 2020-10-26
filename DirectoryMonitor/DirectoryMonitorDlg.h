@@ -5,8 +5,8 @@
 #pragma once
 
 #include <algorithm>
-#include "WaitingDlg.h"
 #include "DirectoryMonitorThread.h"
+#include "TextProgressCtrl.h"
 
 // CDirectoryMonitorDlg 대화 상자
 class CDirectoryMonitorDlg : public CDialogEx
@@ -20,13 +20,12 @@ public:
 	enum { IDD = IDD_DIRECTORYMONITOR_DIALOG };
 #endif
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 지원입니다.
 
 
 // 구현입니다.
 protected:
-	CWaitingDlg* m_pWaitingDlg;
 	CDirectoryMonitorThread* m_pDirMonitorThread;
 
 	HICON m_hIcon;
@@ -39,29 +38,25 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
-	
-
-	static UINT ListenDirAlterd(LPVOID _pMain);
+	CTextProgressCtrl m_ProgressWait;
 	
 	CEdit m_editDirPath;
 	CListCtrl m_listFile;
-
 	CString m_strDirPath;
-
-	CString GetDirPath();
-
 	int m_listIndex;
-	
+
 	afx_msg void OnBnClickedBtnStartMonitoring();
 	afx_msg void OnBnClickedBtnFinishMonitoring();	
 	afx_msg void OnBnClickedBtnSelectDir();
-
+	
+	CString GetDirPath();
 	void ProgressStart(CString strMsg = L"");
-	void ProgressStop();
+	void ProgressStop(CString strMsg = L"");
 	void InitListCrl();
 	CString GetStrFileActionType(int fileActionType);
 	void SetMonitoringInfo(FILE_ACTION_INFO _fileActionInfo);
+
 private:
 	CWinThread* m_pListenDirAlterdThread;
-	
+	static UINT ListenDirAlterd(LPVOID _pMain);
 };

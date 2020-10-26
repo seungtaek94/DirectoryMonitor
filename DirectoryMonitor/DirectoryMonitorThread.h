@@ -18,11 +18,10 @@ public:
 public:
 	void StartDirMonitor(CString strPath);
 	void stop();
-	BOOL IsEmpty();
-	//void Push(FILE_ACTION_INFO& fileActionInfo);
-	FILE_ACTION_INFO Pop();
-
 	bool isRunning();
+
+	BOOL IsEmpty();
+	FILE_ACTION_INFO Pop();	
 
 	int GetAddedFileNum() { return m_nAddedFileCnt; };
 	int GetRemovedFileNum() { return m_nRemovedFileCnt; };
@@ -33,7 +32,6 @@ private:
 
 	void start();
 	void run();	
-
 	BOOL OpenDirMonitor();
 	BOOL ListenDirAltered();
 
@@ -48,10 +46,12 @@ private:
 
 	int m_nAddedFileCnt;
 	int m_nRemovedFileCnt;
-	std::vector<BYTE> m_buffer;
 
+	std::vector<BYTE> m_buffer;
 	Poco::Thread m_thread;
 	Poco::FastMutex m_mutexDirMonitor;
+
+	CWinThread* m_pListenDirAlterdThread;
 
 	typedef std::queue<FILE_ACTION_INFO> QUEUE;
 	QUEUE m_queue;
